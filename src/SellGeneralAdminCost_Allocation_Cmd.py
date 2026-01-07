@@ -1691,10 +1691,6 @@ def add_company_sg_admin_cost_total_row(objRows: List[List[str]]) -> List[List[s
     if not objRows:
         return objRows
 
-    for objRow in objRows:
-        if objRow and objRow[0].strip() == "カンパニー販管費":
-            return objRows
-
     objTargetNames: List[str] = [
         "1Cカンパニー販管費",
         "2Cカンパニー販管費",
@@ -1703,6 +1699,11 @@ def add_company_sg_admin_cost_total_row(objRows: List[List[str]]) -> List[List[s
         "事業開発カンパニー販管費",
     ]
     objTargetSet = set(objTargetNames)
+
+    for objRow in objRows:
+        if objRow and objRow[0].strip() == "カンパニー販管費":
+            return objRows
+
     iMaxColumns: int = max(len(objRow) for objRow in objRows)
     objTotals: List[float] = [0.0] * iMaxColumns
 
@@ -1720,7 +1721,11 @@ def add_company_sg_admin_cost_total_row(objRows: List[List[str]]) -> List[List[s
     for iColumnIndex in range(1, iMaxColumns):
         objNewRow[iColumnIndex] = format_number(objTotals[iColumnIndex])
 
-    objOutputRows: List[List[str]] = [list(objRow) for objRow in objRows]
+    objOutputRows: List[List[str]] = []
+    for objRow in objRows:
+        if objRow and objRow[0].strip() in objTargetSet:
+            continue
+        objOutputRows.append(list(objRow))
     objOutputRows.append(objNewRow)
     return objOutputRows
 
