@@ -1686,6 +1686,50 @@ def filter_rows_by_names(
     return objFilteredRows
 
 
+def add_company_sg_admin_cost_total_row(objRows: List[List[str]]) -> List[List[str]]:
+    # step0003向けにカンパニー販管費の合計行を追加する
+    if not objRows:
+        return objRows
+
+    objTargetNames: List[str] = [
+        "1Cカンパニー販管費",
+        "2Cカンパニー販管費",
+        "3Cカンパニー販管費",
+        "4Cカンパニー販管費",
+        "事業開発カンパニー販管費",
+    ]
+    objTargetSet = set(objTargetNames)
+
+    for objRow in objRows:
+        if objRow and objRow[0].strip() == "カンパニー販管費":
+            return objRows
+
+    iMaxColumns: int = max(len(objRow) for objRow in objRows)
+    objTotals: List[float] = [0.0] * iMaxColumns
+
+    for objRow in objRows:
+        if not objRow:
+            continue
+        if objRow[0].strip() not in objTargetSet:
+            continue
+        for iColumnIndex in range(1, iMaxColumns):
+            if iColumnIndex < len(objRow):
+                objTotals[iColumnIndex] += parse_number(objRow[iColumnIndex])
+
+    objNewRow: List[str] = [""] * iMaxColumns
+    objNewRow[0] = "カンパニー販管費"
+    for iColumnIndex in range(1, iMaxColumns):
+        objNewRow[iColumnIndex] = format_number(objTotals[iColumnIndex])
+
+    objOutputRows: List[List[str]] = []
+    for objRow in objRows:
+        if objRow and objRow[0].strip() in objTargetSet:
+            continue
+        objOutputRows.append(list(objRow))
+    objOutputRows.append(objNewRow)
+    return objOutputRows
+
+
 def create_pj_summary(
     pszPlPath: str,
     objRange: Tuple[Tuple[int, int], Tuple[int, int]],
@@ -1839,12 +1883,40 @@ def create_pj_summary(
             "0003_PJサマリ_step0002_単月_製造原価報告書.tsv",
         )
         shutil.copy2(pszSingleCostReportPath, pszCostReportSingleStep0002Path)
+        pszCostReportSingleStep0003Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0003_単月_製造原価報告書.tsv",
+        )
+        shutil.copy2(pszSingleCostReportPath, pszCostReportSingleStep0003Path)
     if os.path.isfile(pszCumulativeCostReportPath):
         pszCostReportCumulativeStep0002Path: str = os.path.join(
             pszDirectory,
             "0003_PJサマリ_step0002_累計_製造原価報告書.tsv",
         )
         shutil.copy2(pszCumulativeCostReportPath, pszCostReportCumulativeStep0002Path)
+        pszCostReportCumulativeStep0003Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0003_累計_製造原価報告書.tsv",
+        )
+        shutil.copy2(pszCumulativeCostReportPath, pszCostReportCumulativeStep0003Path)
+
+    pszSingleStep0003Path: str = os.path.join(
+        pszDirectory,
+        "0003_PJサマリ_step0003_単月_損益計算書.tsv",
+    )
+    if os.path.isfile(pszSingleStep0002Path):
+        objSingleStep0002Rows = read_tsv_rows(pszSingleStep0002Path)
+        objSingleStep0003Rows = add_company_sg_admin_cost_total_row(objSingleStep0002Rows)
+        write_tsv_rows(pszSingleStep0003Path, objSingleStep0003Rows)
+
+    pszCumulativeStep0003Path: str = os.path.join(
+        pszDirectory,
+        "0003_PJサマリ_step0003_累計_損益計算書.tsv",
+    )
+    if os.path.isfile(pszCumulativeStep0002Path):
+        objCumulativeStep0002Rows = read_tsv_rows(pszCumulativeStep0002Path)
+        objCumulativeStep0003Rows = add_company_sg_admin_cost_total_row(objCumulativeStep0002Rows)
+        write_tsv_rows(pszCumulativeStep0003Path, objCumulativeStep0003Rows)
 
     objTargetColumns: List[str] = [
         "科目名",
