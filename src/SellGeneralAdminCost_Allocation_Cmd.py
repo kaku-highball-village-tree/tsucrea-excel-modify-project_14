@@ -1856,6 +1856,7 @@ def create_pj_summary(
         "3Cカンパニー販管費",
         "4Cカンパニー販管費",
         "事業開発カンパニー販管費",
+        "工数",
         "営業利益",
     ]
     objSingleStep0002Rows = filter_rows_by_names(
