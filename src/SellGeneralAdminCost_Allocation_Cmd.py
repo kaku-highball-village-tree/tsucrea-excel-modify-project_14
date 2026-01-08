@@ -2093,14 +2093,42 @@ def create_pj_summary(
         )
         pszSingleCostStep0005VerticalPath: str = os.path.join(
             pszDirectory,
-            "0003_PJサマリ_step0005_単月_製造原価報告書_vertical.tsv",
+            "0003_PJサマリ_step0005_単月_製造原価報告書_E∪F_vertical.tsv",
         )
         pszSinglePlStep0005VerticalPath: str = os.path.join(
             pszDirectory,
-            "0003_PJサマリ_step0005_単月_損益計算書_vertical.tsv",
+            "0003_PJサマリ_step0005_単月_損益計算書_E∪F_vertical.tsv",
         )
         write_tsv_rows(pszSingleCostStep0005VerticalPath, objAlignedCostRows)
         write_tsv_rows(pszSinglePlStep0005VerticalPath, objAlignedPlRows)
+
+    pszCumulativeCostStep0004VerticalPath: str = os.path.join(
+        pszDirectory,
+        "0003_PJサマリ_step0004_累計_製造原価報告書_vertical.tsv",
+    )
+    pszCumulativePlStep0004VerticalPath: str = os.path.join(
+        pszDirectory,
+        "0003_PJサマリ_step0004_累計_損益計算書_vertical.tsv",
+    )
+    if os.path.isfile(pszCumulativeCostStep0004VerticalPath) and os.path.isfile(
+        pszCumulativePlStep0004VerticalPath
+    ):
+        objCumulativeCostStep0004Rows = read_tsv_rows(pszCumulativeCostStep0004VerticalPath)
+        objCumulativePlStep0004Rows = read_tsv_rows(pszCumulativePlStep0004VerticalPath)
+        objAlignedCostRows, objAlignedPlRows = align_vertical_rows_for_union(
+            objCumulativeCostStep0004Rows,
+            objCumulativePlStep0004Rows,
+        )
+        pszCumulativeCostStep0005VerticalPath: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0005_累計_製造原価報告書_E∪F_vertical.tsv",
+        )
+        pszCumulativePlStep0005VerticalPath: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0005_累計_損益計算書_E∪F_vertical.tsv",
+        )
+        write_tsv_rows(pszCumulativeCostStep0005VerticalPath, objAlignedCostRows)
+        write_tsv_rows(pszCumulativePlStep0005VerticalPath, objAlignedPlRows)
 
     objTargetColumns: List[str] = [
         "科目名",
