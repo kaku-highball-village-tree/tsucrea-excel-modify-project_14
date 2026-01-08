@@ -1960,6 +1960,7 @@ def create_pj_summary(
             "配賦販管費",
             "営業利益",
         )
+        # step0004の損益計算書として保存する
         write_tsv_rows(pszSingleStep0004Path, objSingleStep0004Rows)
 
     pszCumulativeStep0003Path: str = os.path.join(
@@ -1980,6 +1981,7 @@ def create_pj_summary(
             "配賦販管費",
             "営業利益",
         )
+        # step0004の損益計算書として保存する
         write_tsv_rows(pszCumulativeStep0004Path, objCumulativeStep0004Rows)
 
     objTargetColumns: List[str] = [
