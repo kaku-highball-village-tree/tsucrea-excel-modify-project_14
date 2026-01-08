@@ -1771,6 +1771,57 @@ def move_row_between(
     return objOutputRows
 
 
+def align_vertical_rows_for_union(
+    objLeftRows: List[List[str]],
+    objRightRows: List[List[str]],
+) -> Tuple[List[List[str]], List[List[str]]]:
+    objLeftOrder: List[str] = [objRow[0] if objRow else "" for objRow in objLeftRows]
+    objRightOrder: List[str] = [objRow[0] if objRow else "" for objRow in objRightRows]
+    objUnionOrder: List[str] = []
+    objSeen: set[str] = set()
+    for pszName in objLeftOrder + objRightOrder:
+        if pszName in objSeen:
+            continue
+        objSeen.add(pszName)
+        objUnionOrder.append(pszName)
+
+    objLeftMap: Dict[str, List[str]] = {}
+    for objRow in objLeftRows:
+        if not objRow:
+            continue
+        pszName = objRow[0]
+        if pszName in objLeftMap:
+            continue
+        objLeftMap[pszName] = objRow
+
+    objRightMap: Dict[str, List[str]] = {}
+    for objRow in objRightRows:
+        if not objRow:
+            continue
+        pszName = objRow[0]
+        if pszName in objRightMap:
+            continue
+        objRightMap[pszName] = objRow
+
+    iLeftColumnCount: int = max((len(objRow) for objRow in objLeftRows), default=1)
+    iRightColumnCount: int = max((len(objRow) for objRow in objRightRows), default=1)
+
+    objAlignedLeft: List[List[str]] = []
+    objAlignedRight: List[List[str]] = []
+    for pszName in objUnionOrder:
+        if pszName in objLeftMap:
+            objAlignedLeft.append(list(objLeftMap[pszName]))
+        else:
+            objAlignedLeft.append([pszName] + ["0"] * max(iLeftColumnCount - 1, 0))
+
+        if pszName in objRightMap:
+            objAlignedRight.append(list(objRightMap[pszName]))
+        else:
+            objAlignedRight.append([pszName] + ["0"] * max(iRightColumnCount - 1, 0))
+
+    return objAlignedLeft, objAlignedRight
+
+
 def create_pj_summary(
     pszPlPath: str,
     objRange: Tuple[Tuple[int, int], Tuple[int, int]],
@@ -2022,6 +2073,34 @@ def create_pj_summary(
             pszCumulativeStep0004VerticalPath,
             transpose_rows(objCumulativeStep0004Rows),
         )
+
+    pszSingleCostStep0004VerticalPath: str = os.path.join(
+        pszDirectory,
+        "0003_PJサマリ_step0004_単月_製造原価報告書_vertical.tsv",
+    )
+    pszSinglePlStep0004VerticalPath: str = os.path.join(
+        pszDirectory,
+        "0003_PJサマリ_step0004_単月_損益計算書_vertical.tsv",
+    )
+    if os.path.isfile(pszSingleCostStep0004VerticalPath) and os.path.isfile(
+        pszSinglePlStep0004VerticalPath
+    ):
+        objSingleCostStep0004Rows = read_tsv_rows(pszSingleCostStep0004VerticalPath)
+        objSinglePlStep0004Rows = read_tsv_rows(pszSinglePlStep0004VerticalPath)
+        objAlignedCostRows, objAlignedPlRows = align_vertical_rows_for_union(
+            objSingleCostStep0004Rows,
+            objSinglePlStep0004Rows,
+        )
+        pszSingleCostStep0005VerticalPath: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0005_単月_製造原価報告書_vertical.tsv",
+        )
+        pszSinglePlStep0005VerticalPath: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0005_単月_損益計算書_vertical.tsv",
+        )
+        write_tsv_rows(pszSingleCostStep0005VerticalPath, objAlignedCostRows)
+        write_tsv_rows(pszSinglePlStep0005VerticalPath, objAlignedPlRows)
 
     objTargetColumns: List[str] = [
         "科目名",
