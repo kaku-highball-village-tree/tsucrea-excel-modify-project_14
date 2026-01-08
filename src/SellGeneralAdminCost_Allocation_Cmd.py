@@ -1930,6 +1930,11 @@ def create_pj_summary(
             "0003_PJサマリ_step0003_単月_製造原価報告書.tsv",
         )
         shutil.copy2(pszSingleCostReportPath, pszCostReportSingleStep0003Path)
+        pszCostReportSingleStep0004Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0004_単月_製造原価報告書.tsv",
+        )
+        shutil.copy2(pszCostReportSingleStep0003Path, pszCostReportSingleStep0004Path)
     if os.path.isfile(pszCumulativeCostReportPath):
         pszCostReportCumulativeStep0002Path: str = os.path.join(
             pszDirectory,
@@ -1941,6 +1946,11 @@ def create_pj_summary(
             "0003_PJサマリ_step0003_累計_製造原価報告書.tsv",
         )
         shutil.copy2(pszCumulativeCostReportPath, pszCostReportCumulativeStep0003Path)
+        pszCostReportCumulativeStep0004Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0004_累計_製造原価報告書.tsv",
+        )
+        shutil.copy2(pszCostReportCumulativeStep0003Path, pszCostReportCumulativeStep0004Path)
 
     pszSingleStep0003Path: str = os.path.join(
         pszDirectory,
