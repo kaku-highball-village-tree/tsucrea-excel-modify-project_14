@@ -1775,8 +1775,17 @@ def align_vertical_rows_for_union(
     objLeftRows: List[List[str]],
     objRightRows: List[List[str]],
 ) -> Tuple[List[List[str]], List[List[str]]]:
-    objLeftOrder: List[str] = [objRow[0] if objRow else "" for objRow in objLeftRows]
-    objRightOrder: List[str] = [objRow[0] if objRow else "" for objRow in objRightRows]
+    objExcludedNames: set[str] = {"合計", "本部"}
+    objLeftOrder: List[str] = [
+        objRow[0] if objRow else ""
+        for objRow in objLeftRows
+        if objRow and objRow[0] not in objExcludedNames
+    ]
+    objRightOrder: List[str] = [
+        objRow[0] if objRow else ""
+        for objRow in objRightRows
+        if objRow and objRow[0] not in objExcludedNames
+    ]
     objUnionOrder: List[str] = []
     objSeen: set[str] = set()
     for pszName in objLeftOrder + objRightOrder:
@@ -1790,6 +1799,8 @@ def align_vertical_rows_for_union(
         if not objRow:
             continue
         pszName = objRow[0]
+        if pszName in objExcludedNames:
+            continue
         if pszName in objLeftMap:
             continue
         objLeftMap[pszName] = objRow
@@ -1799,6 +1810,8 @@ def align_vertical_rows_for_union(
         if not objRow:
             continue
         pszName = objRow[0]
+        if pszName in objExcludedNames:
+            continue
         if pszName in objRightMap:
             continue
         objRightMap[pszName] = objRow
