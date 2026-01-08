@@ -1730,6 +1730,47 @@ def add_company_sg_admin_cost_total_row(objRows: List[List[str]]) -> List[List[s
     return objOutputRows
 
 
+def move_row_between(
+    objRows: List[List[str]],
+    pszMoveName: str,
+    pszBeforeName: str,
+    pszAfterName: str,
+) -> List[List[str]]:
+    if not objRows:
+        return objRows
+
+    iMoveIndex: int = -1
+    iBeforeIndex: int = -1
+    iAfterIndex: int = -1
+    for iRowIndex, objRow in enumerate(objRows):
+        if not objRow:
+            continue
+        pszName: str = objRow[0].strip()
+        if pszName == pszMoveName:
+            iMoveIndex = iRowIndex
+        elif pszName == pszBeforeName:
+            iBeforeIndex = iRowIndex
+        elif pszName == pszAfterName:
+            iAfterIndex = iRowIndex
+
+    if iMoveIndex < 0 or iBeforeIndex < 0 or iAfterIndex < 0:
+        return objRows
+
+    objOutputRows: List[List[str]] = [list(objRow) for objRow in objRows]
+    objMoveRow: List[str] = objOutputRows.pop(iMoveIndex)
+    if iMoveIndex < iBeforeIndex:
+        iBeforeIndex -= 1
+    if iMoveIndex < iAfterIndex:
+        iAfterIndex -= 1
+
+    iInsertIndex: int = min(iAfterIndex, iBeforeIndex) + 1
+    iInsertIndex = max(iInsertIndex, 0)
+    if iInsertIndex > len(objOutputRows):
+        iInsertIndex = len(objOutputRows)
+    objOutputRows.insert(iInsertIndex, objMoveRow)
+    return objOutputRows
+
+
 def create_pj_summary(
     pszPlPath: str,
     objRange: Tuple[Tuple[int, int], Tuple[int, int]],
@@ -1909,6 +1950,17 @@ def create_pj_summary(
         objSingleStep0002Rows = read_tsv_rows(pszSingleStep0002Path)
         objSingleStep0003Rows = add_company_sg_admin_cost_total_row(objSingleStep0002Rows)
         write_tsv_rows(pszSingleStep0003Path, objSingleStep0003Rows)
+        pszSingleStep0004Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0004_単月_損益計算書.tsv",
+        )
+        objSingleStep0004Rows = move_row_between(
+            objSingleStep0003Rows,
+            "カンパニー販管費",
+            "配賦販管費",
+            "営業利益",
+        )
+        write_tsv_rows(pszSingleStep0004Path, objSingleStep0004Rows)
 
     pszCumulativeStep0003Path: str = os.path.join(
         pszDirectory,
@@ -1918,6 +1970,17 @@ def create_pj_summary(
         objCumulativeStep0002Rows = read_tsv_rows(pszCumulativeStep0002Path)
         objCumulativeStep0003Rows = add_company_sg_admin_cost_total_row(objCumulativeStep0002Rows)
         write_tsv_rows(pszCumulativeStep0003Path, objCumulativeStep0003Rows)
+        pszCumulativeStep0004Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0004_累計_損益計算書.tsv",
+        )
+        objCumulativeStep0004Rows = move_row_between(
+            objCumulativeStep0003Rows,
+            "カンパニー販管費",
+            "配賦販管費",
+            "営業利益",
+        )
+        write_tsv_rows(pszCumulativeStep0004Path, objCumulativeStep0004Rows)
 
     objTargetColumns: List[str] = [
         "科目名",
