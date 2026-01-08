@@ -1935,6 +1935,14 @@ def create_pj_summary(
             "0003_PJサマリ_step0004_単月_製造原価報告書.tsv",
         )
         shutil.copy2(pszCostReportSingleStep0003Path, pszCostReportSingleStep0004Path)
+        pszCostReportSingleStep0004VerticalPath: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0004_単月_製造原価報告書_vertical.tsv",
+        )
+        write_tsv_rows(
+            pszCostReportSingleStep0004VerticalPath,
+            transpose_rows(read_tsv_rows(pszCostReportSingleStep0004Path)),
+        )
     if os.path.isfile(pszCumulativeCostReportPath):
         pszCostReportCumulativeStep0002Path: str = os.path.join(
             pszDirectory,
@@ -1951,6 +1959,14 @@ def create_pj_summary(
             "0003_PJサマリ_step0004_累計_製造原価報告書.tsv",
         )
         shutil.copy2(pszCostReportCumulativeStep0003Path, pszCostReportCumulativeStep0004Path)
+        pszCostReportCumulativeStep0004VerticalPath: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0004_累計_製造原価報告書_vertical.tsv",
+        )
+        write_tsv_rows(
+            pszCostReportCumulativeStep0004VerticalPath,
+            transpose_rows(read_tsv_rows(pszCostReportCumulativeStep0004Path)),
+        )
 
     pszSingleStep0003Path: str = os.path.join(
         pszDirectory,
@@ -1972,6 +1988,11 @@ def create_pj_summary(
         )
         # step0004の損益計算書として保存する
         write_tsv_rows(pszSingleStep0004Path, objSingleStep0004Rows)
+        pszSingleStep0004VerticalPath: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0004_単月_損益計算書_vertical.tsv",
+        )
+        write_tsv_rows(pszSingleStep0004VerticalPath, transpose_rows(objSingleStep0004Rows))
 
     pszCumulativeStep0003Path: str = os.path.join(
         pszDirectory,
@@ -1993,6 +2014,14 @@ def create_pj_summary(
         )
         # step0004の損益計算書として保存する
         write_tsv_rows(pszCumulativeStep0004Path, objCumulativeStep0004Rows)
+        pszCumulativeStep0004VerticalPath: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0004_累計_損益計算書_vertical.tsv",
+        )
+        write_tsv_rows(
+            pszCumulativeStep0004VerticalPath,
+            transpose_rows(objCumulativeStep0004Rows),
+        )
 
     objTargetColumns: List[str] = [
         "科目名",
