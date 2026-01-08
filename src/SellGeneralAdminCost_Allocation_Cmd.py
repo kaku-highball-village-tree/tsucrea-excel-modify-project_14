@@ -1788,11 +1788,26 @@ def align_vertical_rows_for_union(
     ]
     objUnionOrder: List[str] = []
     objSeen: set[str] = set()
-    for pszName in objLeftOrder + objRightOrder:
+    for pszName in objLeftOrder:
         if pszName in objSeen:
             continue
         objSeen.add(pszName)
         objUnionOrder.append(pszName)
+
+    objPositions: Dict[str, int] = {pszName: iIndex for iIndex, pszName in enumerate(objUnionOrder)}
+    iLastInsertIndex: int = -1
+    for pszName in objRightOrder:
+        if pszName in objPositions:
+            iLastInsertIndex = objPositions[pszName]
+            continue
+        iInsertIndex = iLastInsertIndex + 1
+        if iInsertIndex < 0:
+            iInsertIndex = 0
+        if iInsertIndex > len(objUnionOrder):
+            iInsertIndex = len(objUnionOrder)
+        objUnionOrder.insert(iInsertIndex, pszName)
+        objPositions = {pszName: iIndex for iIndex, pszName in enumerate(objUnionOrder)}
+        iLastInsertIndex = objPositions[pszName]
 
     objLeftMap: Dict[str, List[str]] = {}
     for objRow in objLeftRows:
