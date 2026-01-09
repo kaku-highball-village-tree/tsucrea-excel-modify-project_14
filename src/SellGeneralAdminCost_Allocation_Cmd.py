@@ -1950,6 +1950,22 @@ def select_columns(
     return objOutputRows
 
 
+def select_columns(
+    objRows: List[List[str]],
+    objColumnIndices: List[int],
+) -> List[List[str]]:
+    objOutputRows: List[List[str]] = []
+    for objRow in objRows:
+        objSelectedRow: List[str] = []
+        for iColumnIndex in objColumnIndices:
+            if 0 <= iColumnIndex < len(objRow):
+                objSelectedRow.append(objRow[iColumnIndex])
+            else:
+                objSelectedRow.append("")
+        objOutputRows.append(objSelectedRow)
+    return objOutputRows
+
+
 def find_row_index_by_name(objRows: List[List[str]], pszName: str) -> int:
     for iRowIndex, objRow in enumerate(objRows):
         if not objRow:
@@ -2033,6 +2049,7 @@ def create_step0007_pl_cr(
     write_tsv_rows(pszCumulative0002Path, objCumulative0002Rows)
     write_tsv_rows(pszCumulative0003Path, objCumulative0003Rows)
 
+    # step0007: 0001/0002/0003 を縦に連結して出力する
     objSingleFinalRows: List[List[str]] = []
     objSingleFinalRows.extend(objSingle0001Rows)
     objSingleFinalRows.extend(objSingle0002Rows)
