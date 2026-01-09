@@ -2129,6 +2129,16 @@ def create_pj_summary(
         )
         write_tsv_rows(pszSingleCostStep0005VerticalPath, objAlignedCostRows)
         write_tsv_rows(pszSinglePlStep0005VerticalPath, objAlignedPlRows)
+        pszSingleCostStep0005Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0005_単月_製造原価報告書_E∪F.tsv",
+        )
+        pszSinglePlStep0005Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0005_単月_損益計算書_E∪F.tsv",
+        )
+        write_tsv_rows(pszSingleCostStep0005Path, transpose_rows(objAlignedCostRows))
+        write_tsv_rows(pszSinglePlStep0005Path, transpose_rows(objAlignedPlRows))
 
     pszCumulativeCostStep0004VerticalPath: str = os.path.join(
         pszDirectory,
@@ -2157,6 +2167,16 @@ def create_pj_summary(
         )
         write_tsv_rows(pszCumulativeCostStep0005VerticalPath, objAlignedCostRows)
         write_tsv_rows(pszCumulativePlStep0005VerticalPath, objAlignedPlRows)
+        pszCumulativeCostStep0005Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0005_累計_製造原価報告書_E∪F.tsv",
+        )
+        pszCumulativePlStep0005Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0005_累計_損益計算書_E∪F.tsv",
+        )
+        write_tsv_rows(pszCumulativeCostStep0005Path, transpose_rows(objAlignedCostRows))
+        write_tsv_rows(pszCumulativePlStep0005Path, transpose_rows(objAlignedPlRows))
 
     objTargetColumns: List[str] = [
         "科目名",
