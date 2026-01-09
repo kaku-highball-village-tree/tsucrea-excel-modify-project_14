@@ -1950,6 +1950,22 @@ def select_columns(
     return objOutputRows
 
 
+def select_columns(
+    objRows: List[List[str]],
+    objColumnIndices: List[int],
+) -> List[List[str]]:
+    objOutputRows: List[List[str]] = []
+    for objRow in objRows:
+        objSelectedRow: List[str] = []
+        for iColumnIndex in objColumnIndices:
+            if 0 <= iColumnIndex < len(objRow):
+                objSelectedRow.append(objRow[iColumnIndex])
+            else:
+                objSelectedRow.append("")
+        objOutputRows.append(objSelectedRow)
+    return objOutputRows
+
+
 def find_row_index_by_name(objRows: List[List[str]], pszName: str) -> int:
     for iRowIndex, objRow in enumerate(objRows):
         if not objRow:
@@ -2044,6 +2060,38 @@ def create_step0007_pl_cr(
     pszCumulativeOutputPath: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_累計_PL_CR.tsv")
     write_tsv_rows(pszSingleOutputPath, objSingleFinalRows)
     write_tsv_rows(pszCumulativeOutputPath, objCumulativeFinalRows)
+
+    if objSingleFinalRows and objCumulativeFinalRows:
+        pszProjectDirectory: str = os.path.join(os.getcwd(), "PJ_Summary_Project")
+        os.makedirs(pszProjectDirectory, exist_ok=True)
+        objSingleHeaderRow: List[str] = objSingleFinalRows[0]
+        objCumulativeHeaderRow: List[str] = objCumulativeFinalRows[0]
+        iMaxColumns: int = max(len(objSingleHeaderRow), len(objCumulativeHeaderRow))
+        for iColumnIndex in range(1, iMaxColumns):
+            if iColumnIndex < len(objSingleHeaderRow):
+                pszColumnName = objSingleHeaderRow[iColumnIndex]
+                pszOutputName = f"0003_PJサマリ_step0008_単月_{pszColumnName}.tsv"
+                pszOutputPath = os.path.join(pszProjectDirectory, pszOutputName)
+                objSingleColumnRows = [
+                    [
+                        objRow[0] if len(objRow) > 0 else "",
+                        objRow[iColumnIndex] if iColumnIndex < len(objRow) else "",
+                    ]
+                    for objRow in objSingleFinalRows
+                ]
+                write_tsv_rows(pszOutputPath, objSingleColumnRows)
+            if iColumnIndex < len(objCumulativeHeaderRow):
+                pszColumnName = objCumulativeHeaderRow[iColumnIndex]
+                pszOutputName = f"0003_PJサマリ_step0008_累計_{pszColumnName}.tsv"
+                pszOutputPath = os.path.join(pszProjectDirectory, pszOutputName)
+                objCumulativeColumnRows = [
+                    [
+                        objRow[0] if len(objRow) > 0 else "",
+                        objRow[iColumnIndex] if iColumnIndex < len(objRow) else "",
+                    ]
+                    for objRow in objCumulativeFinalRows
+                ]
+                write_tsv_rows(pszOutputPath, objCumulativeColumnRows)
 
     move_files_to_temp(
         [
