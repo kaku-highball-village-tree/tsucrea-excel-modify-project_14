@@ -1950,6 +1950,15 @@ def select_columns(
     return objOutputRows
 
 
+def find_row_index_by_name(objRows: List[List[str]], pszName: str) -> int:
+    for iRowIndex, objRow in enumerate(objRows):
+        if not objRow:
+            continue
+        if objRow[0].strip() == pszName:
+            return iRowIndex
+    return -1
+
+
 def create_step0007_pl_cr(
     pszDirectory: str,
 ) -> None:
@@ -1986,31 +1995,29 @@ def create_step0007_pl_cr(
     if not objSinglePlRows or not objSingleCostRows or not objCumulativePlRows or not objCumulativeCostRows:
         return
 
-    objSingleHeader: List[str] = objSinglePlRows[0]
-    objCumulativeHeader: List[str] = objCumulativePlRows[0]
-    iSingleOperatingIndex: int = find_column_index(objSingleHeader, "営業利益")
-    iSingleManhourIndex: int = find_column_index(objSingleHeader, "工数行(時間)")
-    iCumulativeOperatingIndex: int = find_column_index(objCumulativeHeader, "営業利益")
-    iCumulativeManhourIndex: int = find_column_index(objCumulativeHeader, "工数行(時間)")
+    iSingleOperatingRowIndex: int = find_row_index_by_name(objSinglePlRows, "営業利益")
+    iSingleManhourRowIndex: int = find_row_index_by_name(objSinglePlRows, "工数行(時間)")
+    iCumulativeOperatingRowIndex: int = find_row_index_by_name(objCumulativePlRows, "営業利益")
+    iCumulativeManhourRowIndex: int = find_row_index_by_name(objCumulativePlRows, "工数行(時間)")
 
-    if iSingleOperatingIndex < 0 or iSingleManhourIndex < 0:
+    if iSingleOperatingRowIndex < 0 or iSingleManhourRowIndex < 0:
         return
-    if iCumulativeOperatingIndex < 0 or iCumulativeManhourIndex < 0:
+    if iCumulativeOperatingRowIndex < 0 or iCumulativeManhourRowIndex < 0:
         return
 
-    objSingle0001Columns: List[int] = list(range(iSingleOperatingIndex + 1))
     objSingle0002Columns: List[int] = list(range(1, max(len(objSingleCostRows[0]), 1)))
-    objSingle0003Columns: List[int] = list(range(iSingleManhourIndex, len(objSingleHeader)))
-    objCumulative0001Columns: List[int] = list(range(iCumulativeOperatingIndex + 1))
     objCumulative0002Columns: List[int] = list(range(1, max(len(objCumulativeCostRows[0]), 1)))
-    objCumulative0003Columns: List[int] = list(range(iCumulativeManhourIndex, len(objCumulativeHeader)))
 
-    objSingle0001Rows = select_columns(objSinglePlRows, objSingle0001Columns)
+    objSingle0001Rows = [list(objRow) for objRow in objSinglePlRows[: iSingleOperatingRowIndex + 1]]
     objSingle0002Rows = select_columns(objSingleCostRows, objSingle0002Columns)
-    objSingle0003Rows = select_columns(objSinglePlRows, objSingle0003Columns)
-    objCumulative0001Rows = select_columns(objCumulativePlRows, objCumulative0001Columns)
+    objSingle0003Rows = [list(objRow) for objRow in objSinglePlRows[iSingleManhourRowIndex:]]
+    objCumulative0001Rows = [
+        list(objRow) for objRow in objCumulativePlRows[: iCumulativeOperatingRowIndex + 1]
+    ]
     objCumulative0002Rows = select_columns(objCumulativeCostRows, objCumulative0002Columns)
-    objCumulative0003Rows = select_columns(objCumulativePlRows, objCumulative0003Columns)
+    objCumulative0003Rows = [
+        list(objRow) for objRow in objCumulativePlRows[iCumulativeManhourRowIndex:]
+    ]
 
     pszSingle0001Path: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_単月_0001.tsv")
     pszSingle0002Path: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_単月_0002.tsv")
