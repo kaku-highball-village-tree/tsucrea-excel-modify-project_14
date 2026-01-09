@@ -1869,11 +1869,33 @@ def create_pj_summary(
         objEnd,
     ).replace(".tsv", "_vertical.tsv")
 
-    if not os.path.isfile(pszSinglePlPath) or not os.path.isfile(pszCumulativePlPath):
-        return
+    objSingleRows: Optional[List[List[str]]] = None
+    if os.path.isfile(pszSinglePlPath):
+        objSingleRows = read_tsv_rows(pszSinglePlPath)
+    else:
+        pszSinglePlStep0010Path: str = os.path.join(
+            pszDirectory,
+            f"損益計算書_販管費配賦_step0010_{iEndYear}年{pszEndMonth}月_A∪B_プロジェクト名_C∪D.tsv",
+        )
+        pszSinglePlStep0010VerticalPath: str = pszSinglePlStep0010Path.replace(
+            ".tsv",
+            "_vertical.tsv",
+        )
+        if os.path.isfile(pszSinglePlStep0010VerticalPath):
+            objSingleRows = read_tsv_rows(pszSinglePlStep0010VerticalPath)
+        elif os.path.isfile(pszSinglePlStep0010Path):
+            objSingleRows = transpose_rows(read_tsv_rows(pszSinglePlStep0010Path))
 
-    objSingleRows: List[List[str]] = read_tsv_rows(pszSinglePlPath)
-    objCumulativeRows: List[List[str]] = read_tsv_rows(pszCumulativePlPath)
+    objCumulativeRows: Optional[List[List[str]]] = None
+    if os.path.isfile(pszCumulativePlPath):
+        objCumulativeRows = read_tsv_rows(pszCumulativePlPath)
+    else:
+        pszCumulativePlPathHorizontal: str = pszCumulativePlPath.replace("_vertical.tsv", ".tsv")
+        if os.path.isfile(pszCumulativePlPathHorizontal):
+            objCumulativeRows = transpose_rows(read_tsv_rows(pszCumulativePlPathHorizontal))
+
+    if objSingleRows is None or objCumulativeRows is None:
+        return
 
     objSingleOutputRows: List[List[str]] = []
     for objRow in objSingleRows:
