@@ -1950,22 +1950,6 @@ def select_columns(
     return objOutputRows
 
 
-def select_columns(
-    objRows: List[List[str]],
-    objColumnIndices: List[int],
-) -> List[List[str]]:
-    objOutputRows: List[List[str]] = []
-    for objRow in objRows:
-        objSelectedRow: List[str] = []
-        for iColumnIndex in objColumnIndices:
-            if 0 <= iColumnIndex < len(objRow):
-                objSelectedRow.append(objRow[iColumnIndex])
-            else:
-                objSelectedRow.append("")
-        objOutputRows.append(objSelectedRow)
-    return objOutputRows
-
-
 def find_row_index_by_name(objRows: List[List[str]], pszName: str) -> int:
     for iRowIndex, objRow in enumerate(objRows):
         if not objRow:
@@ -2021,16 +2005,13 @@ def create_step0007_pl_cr(
     if iCumulativeOperatingRowIndex < 0 or iCumulativeManhourRowIndex < 0:
         return
 
-    objSingle0002Columns: List[int] = list(range(1, max(len(objSingleCostRows[0]), 1)))
-    objCumulative0002Columns: List[int] = list(range(1, max(len(objCumulativeCostRows[0]), 1)))
-
     objSingle0001Rows = [list(objRow) for objRow in objSinglePlRows[: iSingleOperatingRowIndex + 1]]
-    objSingle0002Rows = select_columns(objSingleCostRows, objSingle0002Columns)
+    objSingle0002Rows = [list(objRow) for objRow in objSingleCostRows[1:]]
     objSingle0003Rows = [list(objRow) for objRow in objSinglePlRows[iSingleManhourRowIndex:]]
     objCumulative0001Rows = [
         list(objRow) for objRow in objCumulativePlRows[: iCumulativeOperatingRowIndex + 1]
     ]
-    objCumulative0002Rows = select_columns(objCumulativeCostRows, objCumulative0002Columns)
+    objCumulative0002Rows = [list(objRow) for objRow in objCumulativeCostRows[1:]]
     objCumulative0003Rows = [
         list(objRow) for objRow in objCumulativePlRows[iCumulativeManhourRowIndex:]
     ]
