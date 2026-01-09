@@ -1850,6 +1850,69 @@ def align_vertical_rows_for_union(
     return objAlignedLeft, objAlignedRight
 
 
+def insert_per_hour_rows(
+    objRows: List[List[str]],
+) -> List[List[str]]:
+    if not objRows:
+        return objRows
+    iManhourRowIndex: int = -1
+    for iRowIndex, objRow in enumerate(objRows):
+        if objRow and objRow[0] == "工数":
+            iManhourRowIndex = iRowIndex
+            break
+    if iManhourRowIndex < 0:
+        return objRows
+
+    iSalesRowIndex: int = -1
+    iOperatingProfitRowIndex: int = -1
+    for iRowIndex, objRow in enumerate(objRows):
+        if not objRow:
+            continue
+        if objRow[0] == "純売上高":
+            iSalesRowIndex = iRowIndex
+        elif objRow[0] == "営業利益":
+            iOperatingProfitRowIndex = iRowIndex
+
+    if iSalesRowIndex < 0 and iOperatingProfitRowIndex < 0:
+        return objRows
+
+    objOutputRows: List[List[str]] = [list(objRow) for objRow in objRows]
+    objManhourRow = objOutputRows[iManhourRowIndex]
+    objSalesRow = objOutputRows[iSalesRowIndex] if iSalesRowIndex >= 0 else []
+    objOperatingProfitRow = (
+        objOutputRows[iOperatingProfitRowIndex] if iOperatingProfitRowIndex >= 0 else []
+    )
+    iColumnCount = max(len(objManhourRow), len(objSalesRow), len(objOperatingProfitRow), 1)
+    objSalesPerHourRow: List[str] = ["工数1時間当たり純売上高"] + [""] * (iColumnCount - 1)
+    objOperatingPerHourRow: List[str] = ["工数1時間当たり営業利益"] + [""] * (iColumnCount - 1)
+
+    for iColumnIndex in range(1, iColumnCount):
+        pszManhour = objManhourRow[iColumnIndex] if iColumnIndex < len(objManhourRow) else ""
+        fSeconds = parse_time_to_seconds(pszManhour)
+        fHours = fSeconds / 3600.0 if fSeconds > 0.0 else 0.0
+
+        if iSalesRowIndex >= 0:
+            pszSales = objSalesRow[iColumnIndex] if iColumnIndex < len(objSalesRow) else ""
+            fSales = parse_number(pszSales)
+            fSalesPerHour = fSales / fHours if fHours > 0.0 else 0.0
+            objSalesPerHourRow[iColumnIndex] = format_number(fSalesPerHour)
+
+        if iOperatingProfitRowIndex >= 0:
+            pszOperating = (
+                objOperatingProfitRow[iColumnIndex]
+                if iColumnIndex < len(objOperatingProfitRow)
+                else ""
+            )
+            fOperating = parse_number(pszOperating)
+            fOperatingPerHour = fOperating / fHours if fHours > 0.0 else 0.0
+            objOperatingPerHourRow[iColumnIndex] = format_number(fOperatingPerHour)
+
+    iInsertIndex: int = iManhourRowIndex + 1
+    objOutputRows.insert(iInsertIndex, objSalesPerHourRow)
+    objOutputRows.insert(iInsertIndex + 1, objOperatingPerHourRow)
+    return objOutputRows
+
+
 def create_pj_summary(
     pszPlPath: str,
     objRange: Tuple[Tuple[int, int], Tuple[int, int]],
@@ -2161,6 +2224,17 @@ def create_pj_summary(
         )
         write_tsv_rows(pszSingleCostStep0005Path, transpose_rows(objAlignedCostRows))
         write_tsv_rows(pszSinglePlStep0005Path, transpose_rows(objAlignedPlRows))
+        pszSingleCostStep0006Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0006_単月_製造原価報告書_E∪F.tsv",
+        )
+        pszSinglePlStep0006Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0006_単月_損益計算書_E∪F.tsv",
+        )
+        shutil.copy2(pszSingleCostStep0005Path, pszSingleCostStep0006Path)
+        objSingleStep0006Rows = insert_per_hour_rows(read_tsv_rows(pszSinglePlStep0005Path))
+        write_tsv_rows(pszSinglePlStep0006Path, objSingleStep0006Rows)
 
     pszCumulativeCostStep0004VerticalPath: str = os.path.join(
         pszDirectory,
@@ -2199,6 +2273,19 @@ def create_pj_summary(
         )
         write_tsv_rows(pszCumulativeCostStep0005Path, transpose_rows(objAlignedCostRows))
         write_tsv_rows(pszCumulativePlStep0005Path, transpose_rows(objAlignedPlRows))
+        pszCumulativeCostStep0006Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0006_累計_製造原価報告書_E∪F.tsv",
+        )
+        pszCumulativePlStep0006Path: str = os.path.join(
+            pszDirectory,
+            "0003_PJサマリ_step0006_累計_損益計算書_E∪F.tsv",
+        )
+        shutil.copy2(pszCumulativeCostStep0005Path, pszCumulativeCostStep0006Path)
+        objCumulativeStep0006Rows = insert_per_hour_rows(
+            read_tsv_rows(pszCumulativePlStep0005Path)
+        )
+        write_tsv_rows(pszCumulativePlStep0006Path, objCumulativeStep0006Rows)
 
     objTargetColumns: List[str] = [
         "科目名",
