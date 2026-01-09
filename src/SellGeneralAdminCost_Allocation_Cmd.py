@@ -1892,7 +1892,7 @@ def insert_per_hour_rows(
         pszManhour = objManhourRow[iColumnIndex] if iColumnIndex < len(objManhourRow) else ""
         fSeconds = parse_time_to_seconds(pszManhour)
         fHours = fSeconds / 3600.0 if fSeconds > 0.0 else 0.0
-        objManhourHoursRow[iColumnIndex] = f"{fHours * 24.0:.1f}"
+        objManhourHoursRow[iColumnIndex] = f"{fHours:.1f}"
         objManhourHmsRow[iColumnIndex] = pszManhour
 
         if iSalesRowIndex >= 0:
