@@ -1883,6 +1883,8 @@ def insert_per_hour_rows(
         objOutputRows[iOperatingProfitRowIndex] if iOperatingProfitRowIndex >= 0 else []
     )
     iColumnCount = max(len(objManhourRow), len(objSalesRow), len(objOperatingProfitRow), 1)
+    objManhourHoursRow: List[str] = ["工数行(時間)"] + [""] * (iColumnCount - 1)
+    objManhourHmsRow: List[str] = ["工数行(h:mm:ss)"] + [""] * (iColumnCount - 1)
     objSalesPerHourRow: List[str] = ["工数1時間当たり純売上高"] + [""] * (iColumnCount - 1)
     objOperatingPerHourRow: List[str] = ["工数1時間当たり営業利益"] + [""] * (iColumnCount - 1)
 
@@ -1890,6 +1892,8 @@ def insert_per_hour_rows(
         pszManhour = objManhourRow[iColumnIndex] if iColumnIndex < len(objManhourRow) else ""
         fSeconds = parse_time_to_seconds(pszManhour)
         fHours = fSeconds / 3600.0 if fSeconds > 0.0 else 0.0
+        objManhourHoursRow[iColumnIndex] = f"{fHours:.1f}"
+        objManhourHmsRow[iColumnIndex] = pszManhour
 
         if iSalesRowIndex >= 0:
             pszSales = objSalesRow[iColumnIndex] if iColumnIndex < len(objSalesRow) else ""
@@ -1908,8 +1912,10 @@ def insert_per_hour_rows(
             objOperatingPerHourRow[iColumnIndex] = format_number(fOperatingPerHour)
 
     iInsertIndex: int = iManhourRowIndex + 1
-    objOutputRows.insert(iInsertIndex, objSalesPerHourRow)
-    objOutputRows.insert(iInsertIndex + 1, objOperatingPerHourRow)
+    objOutputRows[iManhourRowIndex] = objManhourHoursRow
+    objOutputRows.insert(iInsertIndex, objManhourHmsRow)
+    objOutputRows.insert(iInsertIndex + 1, objSalesPerHourRow)
+    objOutputRows.insert(iInsertIndex + 2, objOperatingPerHourRow)
     return objOutputRows
 
 
