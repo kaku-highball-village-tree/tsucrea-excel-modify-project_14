@@ -1899,7 +1899,7 @@ def insert_per_hour_rows(
             pszSales = objSalesRow[iColumnIndex] if iColumnIndex < len(objSalesRow) else ""
             fSales = parse_number(pszSales)
             fSalesPerHour = fSales / fHours if fHours > 0.0 else 0.0
-            objSalesPerHourRow[iColumnIndex] = format_number(fSalesPerHour)
+            objSalesPerHourRow[iColumnIndex] = str(int(fSalesPerHour))
 
         if iOperatingProfitRowIndex >= 0:
             pszOperating = (
@@ -1909,7 +1909,7 @@ def insert_per_hour_rows(
             )
             fOperating = parse_number(pszOperating)
             fOperatingPerHour = fOperating / fHours if fHours > 0.0 else 0.0
-            objOperatingPerHourRow[iColumnIndex] = format_number(fOperatingPerHour)
+            objOperatingPerHourRow[iColumnIndex] = str(int(fOperatingPerHour))
 
     iInsertIndex: int = iManhourRowIndex + 1
     objOutputRows[iManhourRowIndex] = objManhourHoursRow
