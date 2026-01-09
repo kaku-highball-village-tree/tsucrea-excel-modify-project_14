@@ -1062,6 +1062,21 @@ def move_files_to_temp_and_copy_back(objFilePaths: List[str], pszBaseDirectory: 
         shutil.copy2(pszTempPath, os.path.join(pszBaseDirectory, pszFileName))
 
 
+def move_files_to_temp(objFilePaths: List[str], pszBaseDirectory: str) -> None:
+    if not objFilePaths:
+        return
+
+    pszTempDirectory: str = os.path.join(pszBaseDirectory, "temp")
+    os.makedirs(pszTempDirectory, exist_ok=True)
+
+    for pszFilePath in objFilePaths:
+        if not os.path.isfile(pszFilePath):
+            continue
+        pszFileName: str = os.path.basename(pszFilePath)
+        pszTempPath: str = os.path.join(pszTempDirectory, pszFileName)
+        shutil.move(pszFilePath, pszTempPath)
+
+
 def find_selected_range_path(pszBaseDirectory: str) -> Optional[str]:
     pszFileName: str = "SellGeneralAdminCost_Allocation_DnD_SelectedRange.txt"
     objCandidates: List[str] = [
@@ -1899,7 +1914,7 @@ def insert_per_hour_rows(
             pszSales = objSalesRow[iColumnIndex] if iColumnIndex < len(objSalesRow) else ""
             fSales = parse_number(pszSales)
             fSalesPerHour = fSales / fHours if fHours > 0.0 else 0.0
-            objSalesPerHourRow[iColumnIndex] = format_number(fSalesPerHour)
+            objSalesPerHourRow[iColumnIndex] = str(int(fSalesPerHour))
 
         if iOperatingProfitRowIndex >= 0:
             pszOperating = (
@@ -1909,7 +1924,7 @@ def insert_per_hour_rows(
             )
             fOperating = parse_number(pszOperating)
             fOperatingPerHour = fOperating / fHours if fHours > 0.0 else 0.0
-            objOperatingPerHourRow[iColumnIndex] = format_number(fOperatingPerHour)
+            objOperatingPerHourRow[iColumnIndex] = str(int(fOperatingPerHour))
 
     iInsertIndex: int = iManhourRowIndex + 1
     objOutputRows[iManhourRowIndex] = objManhourHoursRow
@@ -1917,6 +1932,136 @@ def insert_per_hour_rows(
     objOutputRows.insert(iInsertIndex + 1, objSalesPerHourRow)
     objOutputRows.insert(iInsertIndex + 2, objOperatingPerHourRow)
     return objOutputRows
+
+
+def select_columns(
+    objRows: List[List[str]],
+    objColumnIndices: List[int],
+) -> List[List[str]]:
+    objOutputRows: List[List[str]] = []
+    for objRow in objRows:
+        objSelectedRow: List[str] = []
+        for iColumnIndex in objColumnIndices:
+            if 0 <= iColumnIndex < len(objRow):
+                objSelectedRow.append(objRow[iColumnIndex])
+            else:
+                objSelectedRow.append("")
+        objOutputRows.append(objSelectedRow)
+    return objOutputRows
+
+
+def find_row_index_by_name(objRows: List[List[str]], pszName: str) -> int:
+    for iRowIndex, objRow in enumerate(objRows):
+        if not objRow:
+            continue
+        if objRow[0].strip() == pszName:
+            return iRowIndex
+    return -1
+
+
+def create_step0007_pl_cr(
+    pszDirectory: str,
+) -> None:
+    pszSinglePlStep0006Path: str = os.path.join(
+        pszDirectory,
+        "0003_PJサマリ_step0006_単月_損益計算書_E∪F.tsv",
+    )
+    pszSingleCostStep0006Path: str = os.path.join(
+        pszDirectory,
+        "0003_PJサマリ_step0006_単月_製造原価報告書_E∪F.tsv",
+    )
+    pszCumulativePlStep0006Path: str = os.path.join(
+        pszDirectory,
+        "0003_PJサマリ_step0006_累計_損益計算書_E∪F.tsv",
+    )
+    pszCumulativeCostStep0006Path: str = os.path.join(
+        pszDirectory,
+        "0003_PJサマリ_step0006_累計_製造原価報告書_E∪F.tsv",
+    )
+
+    if not (
+        os.path.isfile(pszSinglePlStep0006Path)
+        and os.path.isfile(pszSingleCostStep0006Path)
+        and os.path.isfile(pszCumulativePlStep0006Path)
+        and os.path.isfile(pszCumulativeCostStep0006Path)
+    ):
+        return
+
+    objSinglePlRows = read_tsv_rows(pszSinglePlStep0006Path)
+    objSingleCostRows = read_tsv_rows(pszSingleCostStep0006Path)
+    objCumulativePlRows = read_tsv_rows(pszCumulativePlStep0006Path)
+    objCumulativeCostRows = read_tsv_rows(pszCumulativeCostStep0006Path)
+
+    if not objSinglePlRows or not objSingleCostRows or not objCumulativePlRows or not objCumulativeCostRows:
+        return
+
+    iSingleOperatingRowIndex: int = find_row_index_by_name(objSinglePlRows, "営業利益")
+    iSingleManhourRowIndex: int = find_row_index_by_name(objSinglePlRows, "工数行(時間)")
+    iCumulativeOperatingRowIndex: int = find_row_index_by_name(objCumulativePlRows, "営業利益")
+    iCumulativeManhourRowIndex: int = find_row_index_by_name(objCumulativePlRows, "工数行(時間)")
+
+    if iSingleOperatingRowIndex < 0 or iSingleManhourRowIndex < 0:
+        return
+    if iCumulativeOperatingRowIndex < 0 or iCumulativeManhourRowIndex < 0:
+        return
+
+    objSingle0002Columns: List[int] = list(range(1, max(len(objSingleCostRows[0]), 1)))
+    objCumulative0002Columns: List[int] = list(range(1, max(len(objCumulativeCostRows[0]), 1)))
+
+    objSingle0001Rows = [list(objRow) for objRow in objSinglePlRows[: iSingleOperatingRowIndex + 1]]
+    objSingle0002Rows = select_columns(objSingleCostRows, objSingle0002Columns)
+    objSingle0003Rows = [list(objRow) for objRow in objSinglePlRows[iSingleManhourRowIndex:]]
+    objCumulative0001Rows = [
+        list(objRow) for objRow in objCumulativePlRows[: iCumulativeOperatingRowIndex + 1]
+    ]
+    objCumulative0002Rows = select_columns(objCumulativeCostRows, objCumulative0002Columns)
+    objCumulative0003Rows = [
+        list(objRow) for objRow in objCumulativePlRows[iCumulativeManhourRowIndex:]
+    ]
+
+    pszSingle0001Path: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_単月_0001.tsv")
+    pszSingle0002Path: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_単月_0002.tsv")
+    pszSingle0003Path: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_単月_0003.tsv")
+    pszCumulative0001Path: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_累計_0001.tsv")
+    pszCumulative0002Path: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_累計_0002.tsv")
+    pszCumulative0003Path: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_累計_0003.tsv")
+
+    write_tsv_rows(pszSingle0001Path, objSingle0001Rows)
+    write_tsv_rows(pszSingle0002Path, objSingle0002Rows)
+    write_tsv_rows(pszSingle0003Path, objSingle0003Rows)
+    write_tsv_rows(pszCumulative0001Path, objCumulative0001Rows)
+    write_tsv_rows(pszCumulative0002Path, objCumulative0002Rows)
+    write_tsv_rows(pszCumulative0003Path, objCumulative0003Rows)
+
+    objSingleFinalRows: List[List[str]] = []
+    objSingleFinalRows.extend(objSingle0001Rows)
+    objSingleFinalRows.extend(objSingle0002Rows)
+    objSingleFinalRows.extend(objSingle0003Rows)
+    objCumulativeFinalRows: List[List[str]] = []
+    objCumulativeFinalRows.extend(objCumulative0001Rows)
+    objCumulativeFinalRows.extend(objCumulative0002Rows)
+    objCumulativeFinalRows.extend(objCumulative0003Rows)
+
+    pszSingleOutputPath: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_単月_PL_CR.tsv")
+    pszCumulativeOutputPath: str = os.path.join(pszDirectory, "0003_PJサマリ_step0007_累計_PL_CR.tsv")
+    write_tsv_rows(pszSingleOutputPath, objSingleFinalRows)
+    write_tsv_rows(pszCumulativeOutputPath, objCumulativeFinalRows)
+
+    move_files_to_temp(
+        [
+            pszSingle0001Path,
+            pszSingle0002Path,
+            pszSingle0003Path,
+            pszCumulative0001Path,
+            pszCumulative0002Path,
+            pszCumulative0003Path,
+        ],
+        pszDirectory,
+    )
+    move_files_to_temp_and_copy_back(
+        [pszSingleOutputPath, pszCumulativeOutputPath],
+        pszDirectory,
+    )
 
 
 def create_pj_summary(
@@ -2292,6 +2437,8 @@ def create_pj_summary(
             read_tsv_rows(pszCumulativePlStep0005Path)
         )
         write_tsv_rows(pszCumulativePlStep0006Path, objCumulativeStep0006Rows)
+
+    create_step0007_pl_cr(pszDirectory)
 
     objTargetColumns: List[str] = [
         "科目名",
