@@ -1913,9 +1913,9 @@ def insert_per_hour_rows(
 
     iInsertIndex: int = iManhourRowIndex + 1
     objOutputRows[iManhourRowIndex] = objManhourHoursRow
-    objOutputRows.insert(iInsertIndex, objManhourHmsRow)
-    objOutputRows.insert(iInsertIndex + 1, objSalesPerHourRow)
-    objOutputRows.insert(iInsertIndex + 2, objOperatingPerHourRow)
+    objOutputRows.insert(iInsertIndex, objSalesPerHourRow)
+    objOutputRows.insert(iInsertIndex + 1, objOperatingPerHourRow)
+    objOutputRows.insert(iInsertIndex + 2, objManhourHmsRow)
     return objOutputRows
 
 
