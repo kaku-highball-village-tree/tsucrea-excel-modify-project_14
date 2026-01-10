@@ -1392,6 +1392,34 @@ def add_sales_ratio_column(objRows: List[List[str]]) -> List[List[str]]:
     return objOutputRows
 
 
+def build_step0010_rows(
+    objSingleRows: List[List[str]],
+    objCumulativeRows: List[List[str]],
+) -> List[List[str]]:
+    if not objSingleRows and not objCumulativeRows:
+        return []
+
+    iSingleColumnCount: int = max((len(objRow) for objRow in objSingleRows), default=0)
+    iCumulativeColumnCount: int = max((len(objRow) for objRow in objCumulativeRows), default=0)
+    iMaxRows: int = max(len(objSingleRows), len(objCumulativeRows))
+    objOutputRows: List[List[str]] = []
+
+    for iRowIndex in range(iMaxRows):
+        objSingleRow: List[str] = (
+            list(objSingleRows[iRowIndex]) if iRowIndex < len(objSingleRows) else []
+        )
+        objCumulativeRow: List[str] = (
+            list(objCumulativeRows[iRowIndex]) if iRowIndex < len(objCumulativeRows) else []
+        )
+        if len(objSingleRow) < iSingleColumnCount:
+            objSingleRow.extend([""] * (iSingleColumnCount - len(objSingleRow)))
+        if len(objCumulativeRow) < iCumulativeColumnCount:
+            objCumulativeRow.extend([""] * (iCumulativeColumnCount - len(objCumulativeRow)))
+        objOutputRows.append(objSingleRow + [""] + objCumulativeRow)
+
+    return objOutputRows
+
+
 def append_gross_margin_column(objRows: List[List[str]]) -> List[List[str]]:
     if not objRows:
         return []
@@ -2113,12 +2141,16 @@ def create_step0007_pl_cr(
     if objSingleFinalRows and objCumulativeFinalRows:
         pszStep0008Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0008_Project")
         pszStep0009Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0009_Project")
+        pszStep0010Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0010_Project")
         os.makedirs(pszStep0008Directory, exist_ok=True)
         os.makedirs(pszStep0009Directory, exist_ok=True)
+        os.makedirs(pszStep0010Directory, exist_ok=True)
         objSingleHeaderRow: List[str] = objSingleFinalRows[0]
         objCumulativeHeaderRow: List[str] = objCumulativeFinalRows[0]
         iMaxColumns: int = max(len(objSingleHeaderRow), len(objCumulativeHeaderRow))
         for iColumnIndex in range(1, iMaxColumns):
+            objSingleRatioRows: List[List[str]] = []
+            objCumulativeRatioRows: List[List[str]] = []
             if iColumnIndex < len(objSingleHeaderRow):
                 pszColumnName = objSingleHeaderRow[iColumnIndex]
                 pszOutputName = f"0003_PJサマリ_step0008_単月_{pszColumnName}.tsv"
@@ -2151,6 +2183,11 @@ def create_step0007_pl_cr(
                 pszStep0009Path = os.path.join(pszStep0009Directory, pszStep0009Name)
                 objCumulativeRatioRows = add_sales_ratio_column(objCumulativeColumnRows)
                 write_tsv_rows(pszStep0009Path, objCumulativeRatioRows)
+                if objSingleRatioRows and objCumulativeRatioRows:
+                    pszStep0010Name = f"0003_PJサマリ_step0010_単・累計_{pszColumnName}.tsv"
+                    pszStep0010Path = os.path.join(pszStep0010Directory, pszStep0010Name)
+                    objStep0010Rows = build_step0010_rows(objSingleRatioRows, objCumulativeRatioRows)
+                    write_tsv_rows(pszStep0010Path, objStep0010Rows)
 
     move_files_to_temp(
         [
