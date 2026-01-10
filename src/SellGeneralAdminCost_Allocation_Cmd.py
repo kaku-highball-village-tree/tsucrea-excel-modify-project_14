@@ -26,6 +26,7 @@ import shutil
 import re
 import sys
 from decimal import Decimal, ROUND_HALF_UP
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 
@@ -1420,6 +1421,23 @@ def build_step0010_rows(
     return objOutputRows
 
 
+def build_step0011_rows(objStep0010Rows: List[List[str]]) -> List[List[str]]:
+    if not objStep0010Rows:
+        return []
+
+    objHeaderRow: List[str] = objStep0010Rows[0]
+    objLabelRow: List[str] = [""] * len(objHeaderRow)
+    objRatioIndices: List[int] = [
+        iIndex for iIndex, pszValue in enumerate(objHeaderRow) if pszValue == "売上比率"
+    ]
+    if len(objRatioIndices) >= 1:
+        objLabelRow[objRatioIndices[0]] = "単月"
+    if len(objRatioIndices) >= 2:
+        objLabelRow[objRatioIndices[1]] = "累計"
+
+    return [objLabelRow] + [list(objRow) for objRow in objStep0010Rows]
+
+
 def append_gross_margin_column(objRows: List[List[str]]) -> List[List[str]]:
     if not objRows:
         return []
@@ -2142,9 +2160,19 @@ def create_step0007_pl_cr(
         pszStep0008Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0008_Project")
         pszStep0009Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0009_Project")
         pszStep0010Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0010_Project")
+        pszStep0011Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0011_Project")
         os.makedirs(pszStep0008Directory, exist_ok=True)
         os.makedirs(pszStep0009Directory, exist_ok=True)
         os.makedirs(pszStep0010Directory, exist_ok=True)
+        os.makedirs(pszStep0011Directory, exist_ok=True)
+        pszTimestamp: str = datetime.now().strftime("%Y_%m_%d_%H_%M")
+        pszManagementDirectory: str = os.path.join(
+            os.getcwd(),
+            "ManagementControl",
+            pszTimestamp,
+            "PJ_Summary",
+        )
+        os.makedirs(pszManagementDirectory, exist_ok=True)
         objSingleHeaderRow: List[str] = objSingleFinalRows[0]
         objCumulativeHeaderRow: List[str] = objCumulativeFinalRows[0]
         iMaxColumns: int = max(len(objSingleHeaderRow), len(objCumulativeHeaderRow))
@@ -2188,6 +2216,13 @@ def create_step0007_pl_cr(
                     pszStep0010Path = os.path.join(pszStep0010Directory, pszStep0010Name)
                     objStep0010Rows = build_step0010_rows(objSingleRatioRows, objCumulativeRatioRows)
                     write_tsv_rows(pszStep0010Path, objStep0010Rows)
+                    pszStep0011Name = f"0003_PJサマリ_step0011_単・累計_{pszColumnName}.tsv"
+                    pszStep0011Path = os.path.join(pszStep0011Directory, pszStep0011Name)
+                    objStep0011Rows = build_step0011_rows(objStep0010Rows)
+                    write_tsv_rows(pszStep0011Path, objStep0011Rows)
+                    pszFinalName = f"0003_PJサマリ_単・累計_{pszColumnName}.tsv"
+                    pszFinalPath = os.path.join(pszManagementDirectory, pszFinalName)
+                    write_tsv_rows(pszFinalPath, objStep0011Rows)
 
     move_files_to_temp(
         [
