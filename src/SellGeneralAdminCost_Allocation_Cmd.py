@@ -2089,9 +2089,9 @@ def create_step0007_pl_cr(
         return
 
     iSingleOperatingRowIndex: int = find_row_index_by_name(objSinglePlRows, "営業利益")
-    iSingleManhourRowIndex: int = find_row_index_by_name(objSinglePlRows, "工数行(時間)")
+    iSingleManhourRowIndex: int = find_row_index_by_name(objSinglePlRows, "工数(時間)")
     iCumulativeOperatingRowIndex: int = find_row_index_by_name(objCumulativePlRows, "営業利益")
-    iCumulativeManhourRowIndex: int = find_row_index_by_name(objCumulativePlRows, "工数行(時間)")
+    iCumulativeManhourRowIndex: int = find_row_index_by_name(objCumulativePlRows, "工数(時間)")
 
     if iSingleOperatingRowIndex < 0 or iSingleManhourRowIndex < 0:
         return
