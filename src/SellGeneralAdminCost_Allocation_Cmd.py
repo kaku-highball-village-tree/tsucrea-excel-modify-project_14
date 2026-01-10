@@ -1975,8 +1975,8 @@ def insert_per_hour_rows(
         objOutputRows[iOperatingProfitRowIndex] if iOperatingProfitRowIndex >= 0 else []
     )
     iColumnCount = max(len(objManhourRow), len(objSalesRow), len(objOperatingProfitRow), 1)
-    objManhourHoursRow: List[str] = ["工数行(時間)"] + [""] * (iColumnCount - 1)
-    objManhourHmsRow: List[str] = ["工数行(h:mm:ss)"] + [""] * (iColumnCount - 1)
+    objManhourHoursRow: List[str] = ["工数(時間)"] + [""] * (iColumnCount - 1)
+    objManhourHmsRow: List[str] = ["工数(h:mm:ss)"] + [""] * (iColumnCount - 1)
     objSalesPerHourRow: List[str] = ["工数1時間当たり純売上高"] + [""] * (iColumnCount - 1)
     objOperatingPerHourRow: List[str] = ["工数1時間当たり営業利益"] + [""] * (iColumnCount - 1)
 
