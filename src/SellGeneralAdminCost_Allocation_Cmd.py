@@ -25,6 +25,8 @@ import os
 import shutil
 import re
 import sys
+from decimal import Decimal, ROUND_HALF_UP
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 
@@ -1343,6 +1345,99 @@ def write_tsv_rows(pszPath: str, objRows: List[List[str]]) -> None:
             objFile.write("\t".join(objRow) + "\n")
 
 
+def format_sales_ratio(fValue: float) -> str:
+    objDecimal = Decimal(str(fValue))
+    objRounded = objDecimal.quantize(Decimal("0.000"), rounding=ROUND_HALF_UP)
+    return f"{objRounded:.3f}"
+
+
+def add_sales_ratio_column(objRows: List[List[str]]) -> List[List[str]]:
+    if not objRows:
+        return []
+
+    iSalesRowIndex: int = find_row_index_by_name(objRows, "純売上高")
+    fSales: float = 0.0
+    if iSalesRowIndex >= 0 and len(objRows[iSalesRowIndex]) >= 2:
+        fSales = parse_number(objRows[iSalesRowIndex][1])
+
+    iLastRatioRowIndex: int = find_row_index_by_name(objRows, "当期製品製造原価")
+    if iLastRatioRowIndex < 0:
+        iLastRatioRowIndex = len(objRows) - 1
+
+    objOutputRows: List[List[str]] = []
+    for iRowIndex, objRow in enumerate(objRows):
+        pszName: str = objRow[0] if objRow else ""
+        pszValue: str = objRow[1] if len(objRow) >= 2 else ""
+        if iRowIndex == 0:
+            objOutputRows.append([pszName, pszValue, "売上比率"])
+            continue
+
+        if iRowIndex > iLastRatioRowIndex:
+            objOutputRows.append([pszName, pszValue, ""])
+            continue
+
+        fValue: float = parse_number(pszValue)
+        if abs(fSales) > 0.0000001:
+            fRatio: float = fValue / fSales
+            objOutputRows.append([pszName, pszValue, format_sales_ratio(fRatio)])
+            continue
+
+        if fValue > 0.0:
+            pszRatio = "'＋∞"
+        elif fValue < 0.0:
+            pszRatio = "'－∞"
+        else:
+            pszRatio = format_sales_ratio(0.0)
+        objOutputRows.append([pszName, pszValue, pszRatio])
+
+    return objOutputRows
+
+
+def build_step0010_rows(
+    objSingleRows: List[List[str]],
+    objCumulativeRows: List[List[str]],
+) -> List[List[str]]:
+    if not objSingleRows and not objCumulativeRows:
+        return []
+
+    iSingleColumnCount: int = max((len(objRow) for objRow in objSingleRows), default=0)
+    iCumulativeColumnCount: int = max((len(objRow) for objRow in objCumulativeRows), default=0)
+    iMaxRows: int = max(len(objSingleRows), len(objCumulativeRows))
+    objOutputRows: List[List[str]] = []
+
+    for iRowIndex in range(iMaxRows):
+        objSingleRow: List[str] = (
+            list(objSingleRows[iRowIndex]) if iRowIndex < len(objSingleRows) else []
+        )
+        objCumulativeRow: List[str] = (
+            list(objCumulativeRows[iRowIndex]) if iRowIndex < len(objCumulativeRows) else []
+        )
+        if len(objSingleRow) < iSingleColumnCount:
+            objSingleRow.extend([""] * (iSingleColumnCount - len(objSingleRow)))
+        if len(objCumulativeRow) < iCumulativeColumnCount:
+            objCumulativeRow.extend([""] * (iCumulativeColumnCount - len(objCumulativeRow)))
+        objOutputRows.append(objSingleRow + [""] + objCumulativeRow)
+
+    return objOutputRows
+
+
+def build_step0011_rows(objStep0010Rows: List[List[str]]) -> List[List[str]]:
+    if not objStep0010Rows:
+        return []
+
+    objHeaderRow: List[str] = objStep0010Rows[0]
+    objLabelRow: List[str] = [""] * len(objHeaderRow)
+    objRatioIndices: List[int] = [
+        iIndex for iIndex, pszValue in enumerate(objHeaderRow) if pszValue == "売上比率"
+    ]
+    if len(objRatioIndices) >= 1:
+        objLabelRow[objRatioIndices[0]] = "単月"
+    if len(objRatioIndices) >= 2:
+        objLabelRow[objRatioIndices[1]] = "累計"
+
+    return [objLabelRow] + [list(objRow) for objRow in objStep0010Rows]
+
+
 def append_gross_margin_column(objRows: List[List[str]]) -> List[List[str]]:
     if not objRows:
         return []
@@ -1898,8 +1993,8 @@ def insert_per_hour_rows(
         objOutputRows[iOperatingProfitRowIndex] if iOperatingProfitRowIndex >= 0 else []
     )
     iColumnCount = max(len(objManhourRow), len(objSalesRow), len(objOperatingProfitRow), 1)
-    objManhourHoursRow: List[str] = ["工数行(時間)"] + [""] * (iColumnCount - 1)
-    objManhourHmsRow: List[str] = ["工数行(h:mm:ss)"] + [""] * (iColumnCount - 1)
+    objManhourHoursRow: List[str] = ["工数(時間)"] + [""] * (iColumnCount - 1)
+    objManhourHmsRow: List[str] = ["工数(h:mm:ss)"] + [""] * (iColumnCount - 1)
     objSalesPerHourRow: List[str] = ["工数1時間当たり純売上高"] + [""] * (iColumnCount - 1)
     objOperatingPerHourRow: List[str] = ["工数1時間当たり営業利益"] + [""] * (iColumnCount - 1)
 
@@ -2012,9 +2107,9 @@ def create_step0007_pl_cr(
         return
 
     iSingleOperatingRowIndex: int = find_row_index_by_name(objSinglePlRows, "営業利益")
-    iSingleManhourRowIndex: int = find_row_index_by_name(objSinglePlRows, "工数行(時間)")
+    iSingleManhourRowIndex: int = find_row_index_by_name(objSinglePlRows, "工数(時間)")
     iCumulativeOperatingRowIndex: int = find_row_index_by_name(objCumulativePlRows, "営業利益")
-    iCumulativeManhourRowIndex: int = find_row_index_by_name(objCumulativePlRows, "工数行(時間)")
+    iCumulativeManhourRowIndex: int = find_row_index_by_name(objCumulativePlRows, "工数(時間)")
 
     if iSingleOperatingRowIndex < 0 or iSingleManhourRowIndex < 0:
         return
@@ -2062,16 +2157,32 @@ def create_step0007_pl_cr(
     write_tsv_rows(pszCumulativeOutputPath, objCumulativeFinalRows)
 
     if objSingleFinalRows and objCumulativeFinalRows:
-        pszProjectDirectory: str = os.path.join(os.getcwd(), "PJ_Summary_Project")
-        os.makedirs(pszProjectDirectory, exist_ok=True)
+        pszStep0008Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0008_Project")
+        pszStep0009Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0009_Project")
+        pszStep0010Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0010_Project")
+        pszStep0011Directory: str = os.path.join(os.getcwd(), "PJ_Summary_step0011_Project")
+        os.makedirs(pszStep0008Directory, exist_ok=True)
+        os.makedirs(pszStep0009Directory, exist_ok=True)
+        os.makedirs(pszStep0010Directory, exist_ok=True)
+        os.makedirs(pszStep0011Directory, exist_ok=True)
+        pszTimestamp: str = datetime.now().strftime("%Y_%m_%d_%H_%M")
+        pszManagementDirectory: str = os.path.join(
+            os.getcwd(),
+            "ManagementControl",
+            pszTimestamp,
+            "PJ_Summary",
+        )
+        os.makedirs(pszManagementDirectory, exist_ok=True)
         objSingleHeaderRow: List[str] = objSingleFinalRows[0]
         objCumulativeHeaderRow: List[str] = objCumulativeFinalRows[0]
         iMaxColumns: int = max(len(objSingleHeaderRow), len(objCumulativeHeaderRow))
         for iColumnIndex in range(1, iMaxColumns):
+            objSingleRatioRows: List[List[str]] = []
+            objCumulativeRatioRows: List[List[str]] = []
             if iColumnIndex < len(objSingleHeaderRow):
                 pszColumnName = objSingleHeaderRow[iColumnIndex]
                 pszOutputName = f"0003_PJサマリ_step0008_単月_{pszColumnName}.tsv"
-                pszOutputPath = os.path.join(pszProjectDirectory, pszOutputName)
+                pszOutputPath = os.path.join(pszStep0008Directory, pszOutputName)
                 objSingleColumnRows = [
                     [
                         objRow[0] if len(objRow) > 0 else "",
@@ -2080,10 +2191,14 @@ def create_step0007_pl_cr(
                     for objRow in objSingleFinalRows
                 ]
                 write_tsv_rows(pszOutputPath, objSingleColumnRows)
+                pszStep0009Name = f"0003_PJサマリ_step0009_単月_{pszColumnName}.tsv"
+                pszStep0009Path = os.path.join(pszStep0009Directory, pszStep0009Name)
+                objSingleRatioRows = add_sales_ratio_column(objSingleColumnRows)
+                write_tsv_rows(pszStep0009Path, objSingleRatioRows)
             if iColumnIndex < len(objCumulativeHeaderRow):
                 pszColumnName = objCumulativeHeaderRow[iColumnIndex]
                 pszOutputName = f"0003_PJサマリ_step0008_累計_{pszColumnName}.tsv"
-                pszOutputPath = os.path.join(pszProjectDirectory, pszOutputName)
+                pszOutputPath = os.path.join(pszStep0008Directory, pszOutputName)
                 objCumulativeColumnRows = [
                     [
                         objRow[0] if len(objRow) > 0 else "",
@@ -2092,6 +2207,22 @@ def create_step0007_pl_cr(
                     for objRow in objCumulativeFinalRows
                 ]
                 write_tsv_rows(pszOutputPath, objCumulativeColumnRows)
+                pszStep0009Name = f"0003_PJサマリ_step0009_累計_{pszColumnName}.tsv"
+                pszStep0009Path = os.path.join(pszStep0009Directory, pszStep0009Name)
+                objCumulativeRatioRows = add_sales_ratio_column(objCumulativeColumnRows)
+                write_tsv_rows(pszStep0009Path, objCumulativeRatioRows)
+                if objSingleRatioRows and objCumulativeRatioRows:
+                    pszStep0010Name = f"0003_PJサマリ_step0010_単・累計_{pszColumnName}.tsv"
+                    pszStep0010Path = os.path.join(pszStep0010Directory, pszStep0010Name)
+                    objStep0010Rows = build_step0010_rows(objSingleRatioRows, objCumulativeRatioRows)
+                    write_tsv_rows(pszStep0010Path, objStep0010Rows)
+                    pszStep0011Name = f"0003_PJサマリ_step0011_単・累計_{pszColumnName}.tsv"
+                    pszStep0011Path = os.path.join(pszStep0011Directory, pszStep0011Name)
+                    objStep0011Rows = build_step0011_rows(objStep0010Rows)
+                    write_tsv_rows(pszStep0011Path, objStep0011Rows)
+                    pszFinalName = f"0003_PJサマリ_単・累計_{pszColumnName}.tsv"
+                    pszFinalPath = os.path.join(pszManagementDirectory, pszFinalName)
+                    write_tsv_rows(pszFinalPath, objStep0011Rows)
 
     move_files_to_temp(
         [
